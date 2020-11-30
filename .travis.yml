@@ -4,9 +4,26 @@ language: go
 
 go:
   - 1.13.x
+  
+services:
+  - docker
 
 script:   
   # Test the code
   - go test -v ./...
   # Build the code 
   - CGO_ENABLED=0 GOARCH=amd64 go build -o demo
+  
+  # Login to DockerHub
+  - echo "$REGISTRY_PASSWORD" | docker login --username $REGISTRY_USER --password-stdin
+  
+  # Build the Docker image
+  - docker build -f Dockerfile -t jbraeuer/demo:latest ./
+  
+  # Retrieve Git SHA and re-tag Docker image
+  - GIT_SHA="$(git rev-parse --short HEAD)"
+  - docker tag jbraeuer/demo:latest jbraeuer/demo:$GIT_SHA  
+ 
+   # Push images to DockerHub
+  - docker push jbraeuer/demo:latest
+  - docker push jbraeuer/demo:$GIT_SHA
